@@ -74,7 +74,7 @@ public class Main {
             });
             receiveThread.start();
 
-//          Envio
+//          Envio :v
             while (true) {
                 try {
                     String clientMessage = scanner.nextLine();
