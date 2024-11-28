@@ -74,26 +74,42 @@ public class Main {
             });
             receiveThread.start();
 
-//          Envio :,v
+//          Envio
             while (true) {
                 try {
                     String clientMessage = scanner.nextLine();
-                    // Revisamos si es un archivo
-                    if (clientMessage.startsWith("archivo:")) {
-                        String filePath = clientMessage.substring(8).trim();
-                        enviarArchivo(dout, filePath);
-                    } else if (clientMessage.startsWith("lista_local:")){
-                        List<String> lista_archivos = obtenlistaArchivosLocales(".");
-                        muestraLista(lista_archivos);
-                    } else if (clientMessage.startsWith("lista_remota:")) {
-                        dout.writeInt(SOLICITAR_ARCHIVOS);
-                    } else {
-                        dout.writeInt(MENSAJE); // Tipo de mensaje
-                        dout.writeUTF(clientMessage);
-                        dout.flush();
+                    String command = clientMessage.split(" ")[0]; // Obtiene el primer "palabra" del mensaje
+
+                    switch (command) {
+                        case "/archivo":
+                            String filePath = clientMessage.substring(8).trim();
+                            enviarArchivo(dout, filePath);
+                            break;
+
+                        case "/lista_local":
+                            List<String> listaArchivos = obtenlistaArchivosLocales(".");
+                            muestraLista(listaArchivos);
+                            break;
+
+                        case "/lista_remota":
+                            dout.writeInt(SOLICITAR_ARCHIVOS);
+                            break;
+
+                        case "/help":
+                            System.out.println("Lista de comandos: \n" +
+                                    "/archivo <ruta>    \tEnvia un archivo al dispositivo con conexion\n" +
+                                    "/lista_local       \tMuestra lista de archivos locales\n" +
+                                    "/lista_remota      \tMuestra lista de archivos del dispositivo con conexion");
+                            break;
+
+                        default:
+                            dout.writeInt(MENSAJE);
+                            dout.writeUTF(clientMessage);
+                            dout.flush();
+                            break;
                     }
-                } catch (Exception e) {
-                    System.out.println("Error al enviar mensaje:"+e.getMessage());
+                } catch (IOException e) {
+                    System.out.println("Error al enviar mensaje: " + e.getMessage());
                     if (socket.isClosed()) {
                         break;
                     }
