@@ -25,27 +25,30 @@ public class Main {
     private static final int ARCHIVO = 2;
     private static final int LISTA_ARCHIVOS = 3;
     private static final int SOLICITAR_ARCHIVOS = 4;
+    private static final int ARCHIVO_CIFRADO = 5;
+    private static final int LISTA_ARCHIVOS_CIFRADOS = 6;
 
     public static void main(String[] args) {
         String HOST = "localhost";
         int PORT = 4242;
+        String folderOrigen = "." + "\\origen";
+        String folderDestino = "." + "\\destino";
         if (args.length >= 2) {
             HOST = args[0];
             PORT = Integer.parseInt(args[1]);
         }
         try (Socket socket = new Socket(HOST, PORT);
-             //CONEXIÓN
+//             Conexion
              DataInputStream din = new DataInputStream(socket.getInputStream());
              DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
              Scanner scanner = new Scanner(System.in)) {
 
-            System.out.println("Connected to server");
+            System.out.println("Se ha establecido conexion con " + socket.getLocalAddress() + ":" + socket.getLocalPort());
 
 //            Recepcion
             Thread receiveThread = new Thread(() -> {
                 try {
                     while (!socket.isClosed()) {
-                        // Check for file or message
                         int type = din.readInt();
                         switch (type) {
                             case MENSAJE:
@@ -53,7 +56,7 @@ public class Main {
                                 System.out.println("Server: " + message);
                                 break;
                             case ARCHIVO:
-                                recibirArchivo(din);
+                                recibirArchivo(din, folderDestino);
                                 break;
                             case LISTA_ARCHIVOS:
                                 recibirListaArchivos(din);
@@ -64,7 +67,7 @@ public class Main {
                                 enviarListaArchivos(dout, lista);
                                 break;
                             default:
-                                System.out.println("Tipo:"+type);
+                                System.out.println("Tipo: "+type);
                                 break;
                         }
                     }
@@ -82,8 +85,8 @@ public class Main {
 
                     switch (command) {
                         case "/archivo":
-                            String filePath = clientMessage.substring(8).trim();
-                            enviarArchivo(dout, filePath);
+                            String nombreArchivo = clientMessage.substring(8).trim();
+                            enviarArchivo(dout, folderOrigen, nombreArchivo);
                             break;
 
                         case "/lista_local":
@@ -121,7 +124,7 @@ public class Main {
         }
     }
 
-    private static void recibirArchivo(DataInputStream din) throws Exception {
+    private static void recibirArchivo(DataInputStream din, String folderDestino) throws Exception {
         // Read filename length
         int fileNameLength = din.readInt();
 
@@ -136,7 +139,7 @@ public class Main {
         System.out.println("Receiving file: " + fileName + " (" + fileLength + " bytes)");
 
         // Create output file
-        File file = new File("received_" + fileName);
+        File file = new File(folderDestino, "received_" + fileName);
         try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
             // Read file contents
             byte[] buffer = new byte[4 * 1024];
@@ -153,8 +156,8 @@ public class Main {
         System.out.println("Archivo " + fileName + " recibido exitosamente");
     }
 
-    private static void enviarArchivo(DataOutputStream dout, String path) throws Exception {
-        File file = new File(path);
+    private static void enviarArchivo(DataOutputStream dout, String path, String nombreArchivo) throws Exception {
+        File file = new File(path, nombreArchivo);
         FileInputStream fileInputStream = new FileInputStream(file);
 
         // Send file type
